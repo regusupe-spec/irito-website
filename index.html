@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mini English Trainer</title>
+  <style>
+    :root{
+      --bg:#0b0f14; --card:#111826; --text:#e7edf5; --muted:#9aa7b5;
+      --accent:#5eead4; --danger:#fb7185; --ok:#60a5fa; --line:#1f2a3a;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: radial-gradient(1200px 900px at 20% 10%, #0f1b2d 0%, var(--bg) 55%);
+      color:var(--text);
+    }
+    .wrap{max-width:860px; margin:0 auto; padding:18px;}
+    header{display:flex; align-items:center; justify-content:space-between; gap:12px; margin:10px 0 16px;}
+    .title{font-size:18px; font-weight:800; letter-spacing:.2px}
+    .sub{font-size:12px; color:var(--muted)}
+    .tabs{
+      display:flex; gap:8px; padding:6px; background:rgba(17,24,38,.7);
+      border:1px solid var(--line); border-radius:18px;
+    }
+    .tab{
+      border:0; background:transparent; color:var(--muted); padding:10px 12px;
+      border-radius:14px; cursor:pointer; font-weight:700; font-size:13px;
+    }
+    .tab.active{background:#0b1220; color:var(--text); border:1px solid #22314a}
+    .card{
+      background:rgba(17,24,38,.75);
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:18px;
+      box-shadow: 0 14px 30px rgba(0,0,0,.35);
+    }
+    .studyCard{
+      min-height:220px; display:flex; flex-direction:column; gap:12px;
+      justify-content:center; text-align:center; padding:22px 18px;
+      user-select:none;
+    }
+    .front{font-size:28px; font-weight:850; letter-spacing:.2px}
+    .back{font-size:16px; color:var(--muted); line-height:1.7}
+    .hint{font-size:12px; color:var(--muted)}
+    .row{display:flex; gap:10px; margin-top:14px;}
+    button{
+      border:1px solid var(--line); background:#0b1220; color:var(--text);
+      padding:14px 14px; border-radius:18px; cursor:pointer;
+      font-weight:800; width:100%;
+      transition: transform .06s ease, border-color .15s ease;
+    }
+    button:active{transform:scale(.98)}
+    .btn-again{border-color:rgba(251,113,133,.35)}
+    .btn-again:hover{border-color:rgba(251,113,133,.75)}
+    .btn-good{border-color:rgba(94,234,212,.35)}
+    .btn-good:hover{border-color:rgba(94,234,212,.75)}
+    .btn-ghost{background:transparent}
+    .grid{display:grid; gap:10px}
+    .two{grid-template-columns:1fr 1fr}
+    @media (max-width:560px){ .two{grid-template-columns:1fr} }
+    label{font-size:12px; color:var(--muted); display:block; margin:10px 0 6px}
+    input, textarea{
+      width:100%; border-radius:16px; border:1px solid var(--line);
+      background:#0b1220; color:var(--text);
+      padding:12px 12px; font-size:14px; outline:none;
+    }
+    textarea{min-height:86px; resize:vertical}
+
+    .chipRow{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+    .chip{
+      width:auto; padding:8px 10px; border-radius:999px;
+      border:1px solid #22314a; background:rgba(11,18,32,.45);
+      color:var(--muted); font-weight:800; font-size:12px;
+      cursor:pointer; user-select:none;
+    }
+    .chip.on{color:var(--text); border-color:rgba(94,234,212,.6); background:rgba(94,234,212,.10)}
+    .pill{
+      font-size:11px; padding:6px 10px; border-radius:999px; border:1px solid var(--line);
+      color:var(--muted); white-space:nowrap;
+    }
+    .meta{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px}
+    .tiny{font-size:12px; color:var(--muted)}
+    .split{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+    .danger{color:var(--danger)}
+    .ok{color:var(--accent)}
+    .hr{height:1px; background:var(--line); margin:14px 0}
+    .toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-end}
+    .toast{
+      position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      background:rgba(11,18,32,.92); border:1px solid #22314a; color:var(--text);
+      padding:10px 12px; border-radius:16px; box-shadow:0 10px 20px rgba(0,0,0,.35);
+      font-size:13px; display:none; max-width:min(700px, calc(100vw - 36px));
+    }
+    .toast.show{display:block}
+
+    .listItem{
+      display:flex; gap:10px; align-items:flex-start;
+      padding:12px; border:1px solid var(--line); border-radius:18px;
+      background:rgba(11,18,32,.45);
+    }
+    .sectionTitle{font-weight:900; margin:12px 0 8px; color:var(--text)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="title">Mini English Trainer</div>
+        <div class="sub">自己判定（考える→タップ→Good/Again） / Lessonで区分け管理</div>
+      </div>
+      <div class="tabs" role="tablist" aria-label="mode">
+        <button class="tab active" data-tab="study" role="tab">Study</button>
+        <button class="tab" data-tab="add" role="tab">Add</button>
+        <button class="tab" data-tab="list" role="tab">List</button>
+      </div>
+    </header>
+
+    <main id="view"></main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+const LS_KEY = "mini_english_trainer_v2_cards";
+const LS_SETTINGS = "mini_english_trainer_v2_settings";
+
+const DEFAULT_CARDS = [
+  { id: crypto.randomUUID(), kind:"jp2en", front:"やぁ。調子はどう？", back:"Hi. How’s it going?", tags:["lesson1","sec:essential"], due: Date.now(), interval: 0 }
+];
+
+const store = {
+  tab: "study",
+  reveal: false,
+  cards: loadCards(),
+  currentId: null,
+  settings: loadSettings()
+};
+
+function toast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=> el.classList.remove("show"), 2200);
+}
+
+function loadCards(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return DEFAULT_CARDS;
+    const data = JSON.parse(raw);
+    if(!Array.isArray(data) || data.length === 0) return DEFAULT_CARDS;
+    return data;
+  }catch(e){
+    return DEFAULT_CARDS;
+  }
+}
+function saveCards(){
+  localStorage.setItem(LS_KEY, JSON.stringify(store.cards));
+}
+
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(LS_SETTINGS);
+    if(!raw) return { activeLessons: ["lesson1","lesson2","lesson3","lesson4"] };
+    const s = JSON.parse(raw);
+    if(!s || !Array.isArray(s.activeLessons)) return { activeLessons: ["lesson1","lesson2","lesson3","lesson4"] };
+    return s;
+  }catch(e){
+    return { activeLessons: ["lesson1","lesson2","lesson3","lesson4"] };
+  }
+}
+function saveSettings(){
+  localStorage.setItem(LS_SETTINGS, JSON.stringify(store.settings));
+}
+
+function setTab(tab){
+  store.tab = tab;
+  store.reveal = false;
+  render();
+}
+
+function lessonsFromCards(){
+  const set = new Set();
+  for(const c of store.cards){
+    const t = Array.isArray(c.tags) ? c.tags : [];
+    for(const tag of t){
+      if(/^lesson\d+$/.test(tag)) set.add(tag);
+    }
+  }
+  // なければ既定
+  if(set.size === 0) ["lesson1","lesson2","lesson3","lesson4"].forEach(x=>set.add(x));
+  return Array.from(set).sort((a,b)=>Number(a.replace("lesson",""))-Number(b.replace("lesson","")));
+}
+
+function isActiveLesson(card){
+  const active = new Set(store.settings.activeLessons || []);
+  const t = Array.isArray(card.tags) ? card.tags : [];
+  const lessonTag = t.find(x=>/^lesson\d+$/.test(x));
+  if(!lessonTag) return true; // lesson未指定は常に表示
+  return active.has(lessonTag);
+}
+
+function dueCards(){
+  const now = Date.now();
+  return store.cards
+    .filter(c => (c.due ?? 0) <= now)
+    .filter(isActiveLesson)
+    .sort((a,b) => (a.due ?? 0) - (b.due ?? 0));
+}
+
+function getCurrentCard(){
+  if(!store.currentId) return null;
+  const c = store.cards.find(x => x.id === store.currentId);
+  if(!c) return null;
+  if((c.due ?? 0) > Date.now()) return null;
+  if(!isActiveLesson(c)) return null;
+  return c;
+}
+
+function pickNextCard(){
+  const pinned = getCurrentCard();
+  if(pinned) return pinned;
+  const list = dueCards();
+  if(list.length === 0) return null;
+  store.currentId = list[0].id;
+  return list[0];
+}
+
+function releaseCurrentCard(){
+  store.currentId = null;
+  store.reveal = false;
+}
+
+function formatWhen(ts){
+  const d = new Date(ts);
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  const hh = String(d.getHours()).padStart(2,"0");
+  const mi = String(d.getMinutes()).padStart(2,"0");
+  return `${mm}/${dd} ${hh}:${mi}`;
+}
+
+function schedule(card, quality){
+  const now = Date.now();
+  let interval = card.interval ?? 0;
+
+  if(quality === "again"){
+    interval = 0;
+    card.interval = 0;
+    card.due = now;
+  }else{
+    const min10 = 10 * 60 * 1000;
+    const day1  = 24 * 60 * 60 * 1000;
+
+    if(interval === 0) interval = min10;
+    else if(interval <= min10) interval = day1;
+    else if(interval <= day1) interval = 3 * day1;
+    else if(interval <= 3 * day1) interval = 7 * day1;
+    else interval = Math.round(interval * 2);
+
+    card.interval = interval;
+    card.due = now + interval;
+  }
+}
+
+function upsertCard(card){
+  const idx = store.cards.findIndex(c => c.id === card.id);
+  if(idx >= 0) store.cards[idx] = card;
+  else store.cards.unshift(card);
+  saveCards();
+}
+
+function removeCard(id){
+  store.cards = store.cards.filter(c => c.id !== id);
+  saveCards();
+}
+
+function resetAll(){
+  if(!confirm("学習データを初期化します。よろしいですか？")) return;
+  store.cards = DEFAULT_CARDS.map(c => ({...c, id: crypto.randomUUID(), due: Date.now(), interval: 0}));
+  releaseCurrentCard();
+  saveCards();
+  render();
+}
+
+function normalizeTags(inputTags){
+  if(!inputTags) return [];
+  if(Array.isArray(inputTags)) return inputTags.map(String).map(s=>s.trim()).filter(Boolean);
+  if(typeof inputTags === "string") return inputTags.split(",").map(s=>s.trim()).filter(Boolean);
+  return [];
+}
+function countBlanks(text){
+  const m = String(text || "").match(/___/g);
+  return m ? m.length : 0;
+}
+function splitBackFallback(back){
+  const b = String(back || "");
+  if(!b.includes("/")) return null;
+  const parts = b.split("/").map(s=>s.trim()).filter(Boolean);
+  return parts.length >= 2 ? parts : null;
+}
+
+function normalizeIncomingCard(raw){
+  if(!raw || typeof raw !== "object") return null;
+  const kind = String(raw.kind || "").trim() || (String(raw.front||"").includes("___") ? "cloze" : (/^[ぁ-んァ-ン一-龥]/.test(String(raw.front||"")) ? "jp2en" : "basic"));
+  const front = String(raw.front ?? "").trim();
+  const back  = String(raw.back  ?? "").trim();
+  if(!front || !back) return null;
+
+  let answers = Array.isArray(raw.answers) ? raw.answers.map(String).map(s=>s.trim()).filter(Boolean) : null;
+  const blankCount = countBlanks(front);
+  if(kind === "cloze" && (!answers || answers.length === 0)) answers = [back];
+  if(kind === "cloze" && blankCount >= 2 && answers && answers.length === 1){
+    const fb = splitBackFallback(back);
+    if(fb && fb.length === blankCount) answers = fb;
+  }
+
+  const tags = normalizeTags(raw.tags);
+  return {
+    id: crypto.randomUUID(),
+    kind,
+    front,
+    back,
+    hint: raw.hint ? String(raw.hint) : undefined,
+    explain: raw.explain ? String(raw.explain) : undefined,
+    answers: (kind === "cloze" ? (answers || undefined) : undefined),
+    tags,
+    due: Date.now(),
+    interval: 0
+  };
+}
+
+function importPayload(payload){
+  let incoming = [];
+  if(Array.isArray(payload)) incoming = payload;
+  else if(payload && typeof payload === "object" && Array.isArray(payload.cards)) incoming = payload.cards;
+  else return toast("Import失敗：形式が違います");
+
+  const existing = store.cards || [];
+  const seen = new Set(existing.map(c => `${c.front}|||${c.back}`));
+  let added = 0;
+
+  for(const raw of incoming){
+    const card = normalizeIncomingCard(raw);
+    if(!card) continue;
+    const key = `${card.front}|||${card.back}`;
+    if(seen.has(key)) continue;
+    seen.add(key);
+    existing.push(card);
+    added++;
+  }
+  store.cards = existing;
+  saveCards();
+  toast(`Import完了：${added}件追加`);
+  render();
+}
+
+function downloadJSON(filename, data){
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function renderLessonChips(){
+  const wrap = document.createElement("div");
+  wrap.className = "chipRow";
+  const lessons = lessonsFromCards();
+  const active = new Set(store.settings.activeLessons || []);
+
+  lessons.forEach(ls=>{
+    const b = document.createElement("button");
+    b.className = "chip " + (active.has(ls) ? "on" : "");
+    b.textContent = ls.toUpperCase();
+    b.onclick = ()=>{
+      const cur = new Set(store.settings.activeLessons || []);
+      if(cur.has(ls)) cur.delete(ls); else cur.add(ls);
+      // 1つも選ばれないと困るので、ゼロなら全部ONに戻す
+      if(cur.size === 0) lessons.forEach(x=>cur.add(x));
+      store.settings.activeLessons = Array.from(cur);
+      saveSettings();
+      releaseCurrentCard();
+      render();
+    };
+    wrap.appendChild(b);
+  });
+
+  return wrap;
+}
+
+function render(){
+  document.querySelectorAll(".tab").forEach(btn=>{
+    btn.classList.toggle("active", btn.dataset.tab === store.tab);
+  });
+  const view = document.getElementById("view");
+  view.innerHTML = "";
+  if(store.tab === "study") view.appendChild(renderStudy());
+  if(store.tab === "add") view.appendChild(renderAdd());
+  if(store.tab === "list") view.appendChild(renderList());
+}
+
+function renderStudy(){
+  const container = document.createElement("div");
+  container.className = "card";
+
+  const list = dueCards();
+  const next = pickNextCard();
+
+  const top = document.createElement("div");
+  top.className = "split";
+  top.innerHTML = `
+    <div class="tiny">今すぐ復習: <span class="${list.length ? "ok":"danger"}">${list.length}</span> 件</div>
+    <div class="toolbar">
+      <button class="btn-ghost" style="width:auto; padding:10px 12px" id="btnReset">Reset</button>
+    </div>
+  `;
+  container.appendChild(top);
+
+  // Lessonフィルター
+  container.appendChild(renderLessonChips());
+  container.appendChild(divHr());
+
+  const study = document.createElement("div");
+  study.className = "studyCard";
+  study.setAttribute("role","button");
+  study.tabIndex = 0;
+
+  if(!next){
+    study.innerHTML = `
+      <div class="front">今日はここまで</div>
+      <div class="back">復習が溜まっていません（またはフィルターで除外中）。</div>
+      <div class="hint">ListでImportするか、Lessonフィルターを確認。</div>
+    `;
+    container.appendChild(study);
+    container.querySelector("#btnReset").onclick = resetAll;
+    return container;
+  }
+
+  const card = next;
+
+  const toggleReveal = () => { store.reveal = !store.reveal; render(); };
+  study.onclick = toggleReveal;
+  study.onkeydown = (e)=>{ if(e.key==="Enter" || e.key===" ") toggleReveal(); };
+
+  if(card.kind === "cloze"){
+    const blankCount = countBlanks(card.front);
+    let answers = Array.isArray(card.answers) && card.answers.length ? card.answers : [card.back];
+    if(blankCount >= 2 && answers.length === 1){
+      const fb = splitBackFallback(card.back);
+      if(fb && fb.length === blankCount) answers = fb;
+    }
+
+    const frontEl = document.createElement("div");
+    frontEl.className = "front";
+    frontEl.textContent = card.front;
+
+    const hintEl = document.createElement("div");
+    hintEl.className = "back";
+    hintEl.style.marginTop = "8px";
+    hintEl.textContent = card.hint ? `［ヒント］${card.hint}` : "［ヒント］（なし）";
+
+    const answerEl = document.createElement("div");
+    answerEl.className = "back";
+    answerEl.textContent = store.reveal ? `答え：${answers.join(" / ")}` : "（頭の中で答える → タップで答え表示）";
+
+    const explainEl = document.createElement("div");
+    explainEl.className = "tiny";
+    explainEl.style.marginTop = "6px";
+    explainEl.textContent = (store.reveal && card.explain) ? `解説：${card.explain}` : "";
+
+    const hint = document.createElement("div");
+    hint.className = "hint";
+    hint.textContent = store.reveal ? "確認できたら下のボタンで自己判定" : "頭の中で答える → タップ";
+
+    study.appendChild(frontEl);
+    study.appendChild(hintEl);
+    study.appendChild(answerEl);
+    if(store.reveal && card.explain) study.appendChild(explainEl);
+    study.appendChild(hint);
+  } else {
+    const frontEl = document.createElement("div");
+    frontEl.className = "front";
+    frontEl.textContent = card.front;
+
+    const backEl = document.createElement("div");
+    backEl.className = "back";
+    const placeholder = (card.kind === "jp2en")
+      ? "（英語で言ってみる → タップで答え）"
+      : "（タップで答え）";
+    backEl.textContent = store.reveal ? card.back : placeholder;
+
+    const hint = document.createElement("div");
+    hint.className = "hint";
+    hint.textContent = store.reveal ? "確認できたら下のボタンで自己判定" : "頭の中で答える → タップ";
+
+    study.appendChild(frontEl);
+    study.appendChild(backEl);
+    study.appendChild(hint);
+  }
+
+  container.appendChild(study);
+
+  const row = document.createElement("div");
+  row.className = "row";
+  row.innerHTML = `
+    <button class="btn-again" id="again">もう一回</button>
+    <button class="btn-good" id="good">覚えた</button>
+  `;
+  container.appendChild(row);
+
+  const meta = document.createElement("div");
+  meta.className = "tiny";
+  meta.style.marginTop = "10px";
+  meta.textContent = `次回予定: ${formatWhen(card.due ?? Date.now())}`;
+  container.appendChild(meta);
+
+  container.querySelector("#btnReset").onclick = resetAll;
+  container.querySelector("#again").onclick = ()=>{
+    const updated = {...card};
+    schedule(updated, "again");
+    upsertCard(updated);
+    releaseCurrentCard();
+    render();
+  };
+  container.querySelector("#good").onclick = ()=>{
+    const updated = {...card};
+    schedule(updated, "good");
+    upsertCard(updated);
+    releaseCurrentCard();
+    render();
+  };
+
+  return container;
+}
+
+function renderAdd(){
+  const container = document.createElement("div");
+  container.className = "card";
+
+  const title = document.createElement("div");
+  title.className = "split";
+  title.innerHTML = `<div style="font-weight:900">カード追加</div><div class="tiny">Lessonタグを付けると管理が楽です（例：lesson2）</div>`;
+  container.appendChild(title);
+
+  const form = document.createElement("div");
+  form.className = "grid two";
+  form.innerHTML = `
+    <div>
+      <label>表</label>
+      <input id="front" placeholder="例) It took me ___ to cite all the ___." />
+    </div>
+    <div>
+      <label>tags（カンマ区切り）</label>
+      <input id="tags" placeholder="例) lesson1, sec:grammar, cloze" />
+    </div>
+    <div style="grid-column:1/-1">
+      <label>裏（答え）</label>
+      <textarea id="back" placeholder="例) forever / sources"></textarea>
+    </div>
+    <div style="grid-column:1/-1">
+      <label>ヒント（clozeの和訳）任意</label>
+      <textarea id="hint" placeholder="例) すべての出典を示すのに時間がかかった"></textarea>
+    </div>
+    <div style="grid-column:1/-1">
+      <button id="save" class="btn-good">追加する</button>
+    </div>
+  `;
+  container.appendChild(form);
+
+  form.querySelector("#save").onclick = ()=>{
+    const front = form.querySelector("#front").value.trim();
+    const back  = form.querySelector("#back").value.trim();
+    const hint  = form.querySelector("#hint").value.trim();
+    const tags  = form.querySelector("#tags").value.split(",").map(s=>s.trim()).filter(Boolean);
+
+    if(!front || !back){ alert("表と裏は必須です"); return; }
+
+    const kind = (front.includes("___"))
+      ? "cloze"
+      : (/^[ぁ-んァ-ン一-龥]/.test(front) ? "jp2en" : "basic");
+
+    const card = {
+      id: crypto.randomUUID(),
+      kind,
+      front,
+      back,
+      hint: (kind==="cloze" && hint) ? hint : undefined,
+      tags,
+      due: Date.now(),
+      interval: 0
+    };
+    upsertCard(card);
+    toast("追加しました");
+    setTab("study");
+  };
+
+  return container;
+}
+
+function groupByLesson(cards){
+  const map = new Map();
+  for(const c of cards){
+    const t = Array.isArray(c.tags) ? c.tags : [];
+    const lessonTag = t.find(x=>/^lesson\d+$/.test(x)) || "lesson?";
+    if(!map.has(lessonTag)) map.set(lessonTag, []);
+    map.get(lessonTag).push(c);
+  }
+  // lesson? は最後
+  return Array.from(map.entries()).sort((a,b)=>{
+    const la = a[0]==="lesson?" ? 999 : Number(a[0].replace("lesson",""));
+    const lb = b[0]==="lesson?" ? 999 : Number(b[0].replace("lesson",""));
+    return la - lb;
+  });
+}
+
+function renderList(){
+  const container = document.createElement("div");
+  container.className = "card";
+
+  const due = dueCards().length;
+
+  const head = document.createElement("div");
+  head.className = "split";
+  head.innerHTML = `
+    <div>
+      <div style="font-weight:900">カード一覧（Lesson別）</div>
+      <div class="tiny">全 ${store.cards.length} 件 / 今すぐ復習 ${due} 件</div>
+    </div>
+    <div class="toolbar">
+      <button class="btn-ghost" style="width:auto; padding:10px 12px" id="importBtn">Import JSON</button>
+      <button class="btn-ghost" style="width:auto; padding:10px 12px" id="exportBtn">Export JSON</button>
+      <button class="btn-ghost" style="width:auto; padding:10px 12px" id="clearBtn">Clear</button>
+    </div>
+  `;
+  container.appendChild(head);
+
+  container.appendChild(renderLessonChips());
+  container.appendChild(divHr());
+
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = "application/json,.json";
+  fileInput.style.display = "none";
+  container.appendChild(fileInput);
+
+  head.querySelector("#importBtn").onclick = ()=> fileInput.click();
+  fileInput.onchange = async ()=>{
+    const f = fileInput.files?.[0];
+    if(!f) return;
+    try{
+      const text = await f.text();
+      const payload = JSON.parse(text);
+      importPayload(payload);
+    }catch(e){
+      alert("JSONの読み込みに失敗しました（コメントが入っていないか確認）");
+    }finally{
+      fileInput.value = "";
+    }
+  };
+
+  head.querySelector("#exportBtn").onclick = ()=>{
+    downloadJSON("mini-english-trainer-export.json", store.cards);
+    toast("Exportしました");
+  };
+
+  head.querySelector("#clearBtn").onclick = ()=>{
+    if(!confirm("すべてのカードを削除します。よろしいですか？")) return;
+    store.cards = [];
+    releaseCurrentCard();
+    saveCards();
+    render();
+    toast("空にしました");
+  };
+
+  // Lesson別表示（フィルター適用）
+  const filtered = store.cards.filter(isActiveLesson);
+  const groups = groupByLesson(filtered);
+
+  for(const [lesson, cards] of groups){
+    const h = document.createElement("div");
+    h.className = "sectionTitle";
+    h.textContent = `${lesson.toUpperCase()}（${cards.length}）`;
+    container.appendChild(h);
+
+    cards
+      .slice()
+      .sort((a,b)=> (a.due ?? 0) - (b.due ?? 0))
+      .forEach(card=>{
+        const item = document.createElement("div");
+        item.className = "listItem";
+
+        const left = document.createElement("div");
+        left.style.flex = "1";
+        left.innerHTML = `
+          <div style="font-weight:900; font-size:15px">${escapeHtml(card.front)}</div>
+          <div class="tiny">${escapeHtml(card.back)}</div>
+          ${card.kind==="cloze" && card.hint ? `<div class="tiny">hint: ${escapeHtml(card.hint)}</div>` : ""}
+          <div class="meta">
+            <span class="pill">kind: ${escapeHtml(card.kind || "basic")}</span>
+            <span class="pill">due: ${formatWhen(card.due ?? Date.now())}</span>
+            ${(card.tags ?? []).map(t=>`<span class="pill">${escapeHtml(t)}</span>`).join("")}
+          </div>
+        `;
+
+        const right = document.createElement("div");
+        right.style.display = "flex";
+        right.style.flexDirection = "column";
+        right.style.gap = "8px";
+        right.innerHTML = `
+          <button style="padding:10px 12px" class="btn-ghost" data-act="now">今やる</button>
+          <button style="padding:10px 12px" class="btn-ghost" data-act="del">削除</button>
+        `;
+
+        right.querySelector('[data-act="now"]').onclick = ()=>{
+          const c = {...card, due: Date.now(), interval: 0};
+          upsertCard(c);
+          store.currentId = c.id;
+          store.reveal = false;
+          setTab("study");
+        };
+
+        right.querySelector('[data-act="del"]').onclick = ()=>{
+          if(confirm("このカードを削除しますか？")) {
+            removeCard(card.id);
+            if(store.currentId === card.id) releaseCurrentCard();
+            toast("削除しました");
+            render();
+          }
+        };
+
+        item.appendChild(left);
+        item.appendChild(right);
+        container.appendChild(item);
+      });
+  }
+
+  return container;
+}
+
+function divHr(){
+  const hr = document.createElement("div");
+  hr.className = "hr";
+  return hr;
+}
+function escapeHtml(str){
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+// タブ切り替え
+document.querySelectorAll(".tab").forEach(btn=>{
+  btn.addEventListener("click", ()=> setTab(btn.dataset.tab));
+});
+
+render();
+</script>
+</body>
+</html>
